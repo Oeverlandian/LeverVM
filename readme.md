@@ -21,19 +21,20 @@ Stack Operations
 *   ```POP```: Pops the latest value from the stack.
 *   ```DUP```: Duplicates the top value of the stack and pushes it onto the stack.
 *   ```SWP```: Swaps the two top values on the stack.
-*   ```CLR```: Clears the entire stack.
+*   ```SCL```: Clears the entire stack.
 
 Memory Operations
 ---------------
 
-*   ```STR {address(int)}```: Stores the latest value on the stack in memory to the given address.
-*   ```LOA {address(int)}```: Loads the value at a given address from memory onto the stack.
+*   ```STR {address}```: Stores the latest value on the stack in memory to the given address.
+*   ```LOA {address}```: Loads the value at a given address from memory onto the stack.
+*   ```MCL```: Clears the entire heap.
 
 Register Operations
 ---------------
 
-*   ```SET {address(int)}```: Stores the latest value on the stack to the given register address (0-7).
-*   ```GET {address(int)}```: Pushes the value in the given register address (0-7) to the stack.
+*   ```SET {address}```: Stores the latest value on the stack to the given register address (0-7).
+*   ```GET {address}```: Pushes the value in the given register address (0-7) to the stack.
 
 Jump Operations
 ---------------

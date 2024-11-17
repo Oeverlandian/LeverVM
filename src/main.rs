@@ -21,11 +21,12 @@ pub enum Opcode {
     POP, // Pop the latest value from the stack
     DUP, // Duplicates the top of the stack and pushes it into the stack
     SWP, // Swaps the tow top elements on the stack
-    CLR, // Clears the entire stack
+    SCL, // Clears the entire stack
 
     // Memory Operations
     STR, // Stores latest value on the stack in memory
     LOA, // Loads value at given adress from memory to the stack
+    MCL, // Clears the entire heap
 
     // Register Operations
     SET, // Sets the latest value on the stack to the specified register
@@ -227,7 +228,7 @@ impl VM {
                 }
                 self.pc + 1
             },
-            Opcode::CLR => {
+            Opcode::SCL => {
                 if self.stack.is_empty() {
                     eprintln!("Error: Stack is already empty!");
                 } else {
@@ -471,6 +472,15 @@ impl VM {
 
                 self.pc + 1
             }
+            Opcode::MCL => {
+                if self.memory.is_empty() {
+                    eprintln!("Error: Memory is already clear!")
+                } else {
+                    self.memory.clear();   
+                }
+
+                return self.pc + 1
+            }
         }
     }
 
@@ -537,7 +547,7 @@ impl VM {
                     "LOA" => Opcode::LOA,
                     "DUP" => Opcode::DUP,
                     "SWP" => Opcode::SWP,
-                    "CLR" => Opcode::CLR,
+                    "SCL" => Opcode::SCL,
                     "SET" => Opcode::SET,
                     "GET" => Opcode::GET,
                     "INP" => Opcode::INP,
@@ -558,6 +568,7 @@ impl VM {
                     "LTH" => Opcode::LTH,
                     "GTE" => Opcode::GTE,
                     "LTE" => Opcode::LTE,
+                    "MCL" => Opcode::MCL,
                     _ => {
                         eprintln!("Unknown opcode: {}", opcode_str);
                         continue;
