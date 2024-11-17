@@ -54,6 +54,6 @@ Input/Output Operations
 Miscellaneous Operations
 ------------------------
 
-*   ```DEB```: Prints the current program counter (PC), stack, and memory state to the console.
+*   ```DEB```: Prints the current program counter (PC), stack, memory state, registers states and labels to the console.
 *   ```HLT```: Halts the execution of the program.
 *   ```NOP```: Does nothing (no operation).
