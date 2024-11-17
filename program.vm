@@ -1,5 +1,0 @@
-START:
-    PSH 0
-    PSH 1
-    GTH
-    DEB
