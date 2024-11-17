@@ -94,7 +94,7 @@ impl VM {
                     return self.pc + 1;
                 }
                 if let (Some(b), Some(a)) = (self.stack.pop(), self.stack.pop()) {
-                    self.stack.push(a - b);
+                    self.stack.push(b - a);
                 }
                 self.pc + 1
             },
@@ -115,7 +115,7 @@ impl VM {
                 }
                 if let (Some(b), Some(a)) = (self.stack.pop(), self.stack.pop()) {
                     if b != 0 {
-                        self.stack.push(a / b);
+                        self.stack.push(b / a);
                     } else {
                         eprintln!("Error: Can't divide by zero!");
                     }
@@ -129,7 +129,7 @@ impl VM {
                 }
                 if let (Some(b), Some(a)) = (self.stack.pop(), self.stack.pop()) {
                     if b != 0 {
-                        self.stack.push(a % b);
+                        self.stack.push(b % a);
                     } else {
                         eprintln!("Error: Can't divide by zero!");
                     }
@@ -241,25 +241,24 @@ impl VM {
             },
             Opcode::JMP => {
                 if let Some(target) = operand {
-                    if let Some(&resolved_target) = self.labels.get(&(target.to_string())) {
-                        return resolved_target;
+                    if (target as usize) < self.program.len() {
+                        return target as usize;
                     } else {
-                        eprintln!("Error: Undefined label '{}'", target);
+                        eprintln!("Error: Invalid jump target '{}'", target);
                     }
                 }
                 self.pc + 1
-            },
-            
+            }
             Opcode::JEZ => {
-                if let Some(target) = operand {
-                    if let Some(&value) = self.stack.last() {
-                        if value == 0 {
+                if let Some(&value) = self.stack.last() {
+                    if value == 0 {
+                        if let Some(target) = operand {
                             if let Some(&resolved_target) = self.labels.get(&target.to_string()) {
                                 return resolved_target;
+                            } else if (target as usize) < self.program.len() {
+                                return target as usize;
                             } else {
-                                if target >= 0 && (target as usize) < self.program.len() {
-                                    return target as usize;
-                                }
+                                eprintln!("Error: Invalid jump target '{}'", target);
                             }
                         }
                     }
@@ -268,15 +267,15 @@ impl VM {
             },
             
             Opcode::JNZ => {
-                if let Some(target) = operand {
-                    if let Some(&value) = self.stack.last() {
-                        if value != 0 {
+                if let Some(&value) = self.stack.last() {
+                    if value != 0 {
+                        if let Some(target) = operand {
                             if let Some(&resolved_target) = self.labels.get(&target.to_string()) {
                                 return resolved_target;
+                            } else if (target as usize) < self.program.len() {
+                                return target as usize;
                             } else {
-                                if target >= 0 && (target as usize) < self.program.len() {
-                                    return target as usize;
-                                }
+                                eprintln!("Error: Invalid jump target '{}'", target);
                             }
                         }
                     }
@@ -285,15 +284,15 @@ impl VM {
             },
             
             Opcode::JGZ => {
-                if let Some(target) = operand {
-                    if let Some(&value) = self.stack.last() {
-                        if value > 0 {
+                if let Some(&value) = self.stack.last() {
+                    if value > 0 {
+                        if let Some(target) = operand {
                             if let Some(&resolved_target) = self.labels.get(&target.to_string()) {
                                 return resolved_target;
+                            } else if (target as usize) < self.program.len() {
+                                return target as usize;
                             } else {
-                                if target >= 0 && (target as usize) < self.program.len() {
-                                    return target as usize;
-                                }
+                                eprintln!("Error: Invalid jump target '{}'", target);
                             }
                         }
                     }
@@ -302,21 +301,22 @@ impl VM {
             },
             
             Opcode::JLZ => {
-                if let Some(target) = operand {
-                    if let Some(&value) = self.stack.last() {
-                        if value < 0 {
+                if let Some(&value) = self.stack.last() {
+                    if value < 0 {
+                        if let Some(target) = operand {
                             if let Some(&resolved_target) = self.labels.get(&target.to_string()) {
                                 return resolved_target;
+                            } else if (target as usize) < self.program.len() {
+                                return target as usize;
                             } else {
-                                if target >= 0 && (target as usize) < self.program.len() {
-                                    return target as usize;
-                                }
+                                eprintln!("Error: Invalid jump target '{}'", target);
                             }
                         }
                     }
                 }
                 self.pc + 1
             },
+            
         }
     }
 
@@ -348,7 +348,7 @@ impl VM {
                 let label = line[..line.len()-1].trim().to_string();
                 self.labels.insert(label, current_position);
                 continue;
-            }
+            }            
             
             // Count instruction
             if !line.trim().is_empty() {
@@ -370,7 +370,6 @@ impl VM {
             let mut parts = line.split_whitespace();
             if let Some(opcode_str) = parts.next() {
                 let opcode = match opcode_str.to_uppercase().as_str() {
-                    // Existing opcodes...
                     "ADD" => Opcode::ADD,
                     "SUB" => Opcode::SUB,
                     "MUL" => Opcode::MUL,
@@ -401,15 +400,15 @@ impl VM {
                 };
 
                 let operand = if let Some(operand_str) = parts.next() {
-                    if let Some(&target) = self.labels.get(operand_str) {
-                        Some(target as i32)
+                    if self.labels.contains_key(operand_str) {
+                        Some(*self.labels.get(operand_str).unwrap() as i32)
                     } else {
-                        // Try parsing as a number
                         operand_str.parse().ok()
                     }
                 } else {
                     None
                 };
+                
 
                 program.push((opcode, operand));
                 current_position += 1;

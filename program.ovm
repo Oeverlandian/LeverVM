@@ -1,70 +1,18 @@
-# Demonstration Program
+START:
+    PSH 10        # Push 10 onto the stack
+    PSH 20        # Push 20 onto the stack
+    ADD           # Add the top two values on the stack
+    PRT           # Print the result (should print 30)
+    JMP NEXT      # Jump to the label 'NEXT'
 
-# Initialize two numbers on the stack
-PSH 5
-PSH 3
+END:
+    PSH 42        # Push 42 onto the stack
+    PRT           # Print the final value (should print 42)
+    HLT           # Halt the program
 
-# Add the two numbers and print the result
-ADD
-PRT
-
-# Push two numbers again for subtraction and multiply them
-PSH 10
-PSH 4
-SUB
-PRT
-
-# Push two numbers for multiplication and print the result
-PSH 2
-PSH 7
-MUL
-PRT
-
-# Push two numbers for division, perform division, and print the result
-PSH 15
-PSH 5
-DIV
-PRT
-
-# Push a number, increment it, and print the result
-PSH 20
-INC
-PRT
-
-# Push a number, decrement it, and print the result
-PSH 30
-DEC
-PRT
-
-# Perform a conditional jump (JMP) based on value at the top of the stack (jump to label if equal to zero)
-PSH 0
-JEZ jump_here
-
-# This won't be printed, because the value was zero, and we jumped
-PRT
-
-# Label definition for jump
-jump_here:
-PSH 100
-PRT
-
-# Test a jump for non-zero value (JNZ)
-PSH 1
-JNZ jump_nonzero
-
-# This will not be printed, because we will jump to the "nonzero" label
-PRT
-
-# Label definition for non-zero jump
-jump_nonzero:
-PSH 200
-PRT
-
-# Push a number to memory and load it back
-PSH 500
-STR 0  # Store the number 500 at address 0
-LOA 0   # Load the value at address 0 to the stack
-PRT
-
-# Halt the program
-HLT
+NEXT:
+    PSH 5         # Push 5 onto the stack
+    PSH 3         # Push 3 onto the stack
+    SUB           # Subtract the top two values (3 - 5 = -2)
+    PRT           # Print the result (should print -2)
+    JMP END       # Jump to the label 'END'
