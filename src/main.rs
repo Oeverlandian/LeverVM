@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::io::BufRead;
 
 const MAX_MEMORY_SIZE: usize = 1024 * 1024; // 1 MB
+const REGISTER_AMOUNT: usize = 8;
 
 #[derive(Debug, Clone, Copy)]
 pub enum Opcode {
@@ -15,12 +16,20 @@ pub enum Opcode {
     INC, // Increment the latest value on the stack by one
     DEC, // Decrement the latest value on the stack by one
 
-    // Data
+    // Stack Operations
     PSH, // Pushes the given value onto stack
     POP, // Pop the latest value from the stack
+    DUP, // Duplicates the top of the stack and pushes it into the stack
+    SWP, // Swaps the tow top elements on the stack
+    CLR, // Clears the entire stack
+
+    // Memory Operations
     STR, // Stores latest value on the stack in memory
     LOA, // Loads value at given adress from memory to the stack
-    DUP, // Duplicates the top of the stack and pushes it into the stack
+
+    // Register Operations
+    SET, // Sets the latest value on the stack to the specified register
+    GET, // Pushes the value in the register to the stack
 
     // Jumps
     JMP, // Unconditional jump to label
@@ -43,6 +52,7 @@ pub enum Opcode {
 pub struct VM {
     stack: Vec<i32>,
     memory: HashMap<usize, i32>,
+    registers: [i32; REGISTER_AMOUNT],
     program: Vec<(Opcode, Option<i32>)>,
     pc: usize,  // Program counter
     running: bool,
@@ -54,6 +64,7 @@ impl VM {
         VM {
             stack: Vec::new(),
             memory: HashMap::new(),
+            registers: [0; REGISTER_AMOUNT],
             program: Vec::new(),
             pc: 0,
             running: false,
@@ -195,6 +206,42 @@ impl VM {
                     }
                 }
                 self.pc + 1
+            },
+            Opcode::SWP => {
+                if self.stack.len() < 2 {
+                    eprintln!("Error: Stack Underflow");
+                } else {
+                    if let (Some(a), Some(b)) = (self.stack.pop(), self.stack.pop()) {
+                        self.stack.push(b);
+                        self.stack.push(a);
+                    }
+                }
+                self.pc + 1
+            },
+            Opcode::CLR => {
+                if self.stack.is_empty() {
+                    eprintln!("Error: Stack is already empty!");
+                } else {
+                    self.stack.clear();
+                }
+                self.pc + 1
+            },
+            Opcode::SET => {
+                if self.stack.is_empty() {
+                    eprintln!("Error: Stack Underflow");
+                } else {
+                    if let Some(reg) = operand {
+                        self.registers[reg as usize] = self.stack.pop().unwrap_or(0);
+                    }
+                }
+                self.pc + 1
+            },
+            Opcode::GET => {
+                if let Some(reg) = operand {
+                    let value = self.registers[reg as usize]; 
+                    self.stack.push(value);
+                }
+                self.pc + 1
             }
             Opcode::INP => {
                 let mut input_line = String::new();
@@ -210,7 +257,7 @@ impl VM {
                 };
                 self.stack.push(a);
                 self.pc + 1
-            }
+            },
             Opcode::PRT => {
                 if let Some(value) = self.stack.last() {
                     println!("{}", value);
@@ -265,7 +312,6 @@ impl VM {
                 }
                 self.pc + 1
             },
-            
             Opcode::JNZ => {
                 if let Some(&value) = self.stack.last() {
                     if value != 0 {
@@ -282,7 +328,6 @@ impl VM {
                 }
                 self.pc + 1
             },
-            
             Opcode::JGZ => {
                 if let Some(&value) = self.stack.last() {
                     if value > 0 {
@@ -299,7 +344,6 @@ impl VM {
                 }
                 self.pc + 1
             },
-            
             Opcode::JLZ => {
                 if let Some(&value) = self.stack.last() {
                     if value < 0 {
@@ -321,7 +365,7 @@ impl VM {
     }
 
     fn debug_state(&self) {
-        println!("PC: {}, Stack: {:?}, Memory: {:?}", self.pc, self.stack, self.memory);
+        println!("PC: {}, Stack: {:?}, Memory: {:?}, Registers: {:?}, Labels: {:?}", self.pc, self.stack, self.memory, self.registers, self.labels);
     }
 }
 
@@ -382,6 +426,10 @@ impl VM {
                     "STR" => Opcode::STR,
                     "LOA" => Opcode::LOA,
                     "DUP" => Opcode::DUP,
+                    "SWP" => Opcode::SWP,
+                    "CLR" => Opcode::CLR,
+                    "SET" => Opcode::SET,
+                    "GET" => Opcode::GET,
                     "INP" => Opcode::INP,
                     "PRT" => Opcode::PRT,
                     "PPT" => Opcode::PPT,
@@ -418,11 +466,28 @@ impl VM {
         self.load_program(program);
         Ok(())
     }
+
+    fn register_index_from_name(&self, reg_name: &str) -> usize {
+        match reg_name {
+            "R0" => 0,
+            "R1" => 1,
+            "R2" => 2,
+            "R3" => 3,
+            "R4" => 4,
+            "R5" => 5,
+            "R6" => 6,
+            "R7" => 7,
+            _ => {
+                eprintln!("Error: Invalid register name {}, defaulting to 0", reg_name);
+                0 // Defaults to 0 if invalid register is given
+            }
+        }
+    }
 }
 
 fn main() {
     let mut vm = VM::new();
-    if let Err(e) = vm.load_program_from_file("program.ovm") {
+    if let Err(e) = vm.load_program_from_file("program.vm") {
         eprintln!("Error loading program: {}", e);
         return;
     }

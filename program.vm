@@ -1,0 +1,14 @@
+START:
+    PSH 10
+    DEB
+    DUP
+    DEB
+    ADD
+    DEB
+    SET 1
+    DEB
+    GET 1
+    DEB
+    PRT
+    DEB
+    HLT
