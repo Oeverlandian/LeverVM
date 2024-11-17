@@ -50,6 +50,7 @@ Input/Output Operations
 *   ```INP```: Gets input from the console and pushes it onto the stack.
 *   ```PRT```: Prints the top value on the stack to the console.
 *   ```PPT```: Prints the top value on the stack and then pops it from the stack.
+*   ```PRC```: Prints a ASCII char based on the value of the top value of the stack.
 
 Miscellaneous Operations
 ------------------------

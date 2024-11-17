@@ -42,6 +42,7 @@ pub enum Opcode {
     INP, // Gets input from the console and pushes it on to the stack
     PRT, // Print the last thing on the stack to the console
     PPT, // Prints the last thing on the stack to the console and pops it
+    PRC, // Prints the ASCII character on the top of the stack
 
     // Miscellaneous 
     DEB, // Prints the PC, stack and memory to the console
@@ -274,6 +275,18 @@ impl VM {
                 }
                 self.pc + 1
             },
+            Opcode::PRC => {
+                if let Some(value) = self.stack.pop() {
+                    if let Some(ch) = char::from_u32(value as u32) {
+                        print!("{}", ch);
+                    } else {
+                        eprintln!("Error: Invalid ASCII code {}", value);
+                    }
+                } else {
+                    eprintln!("Error: Stack is empty, can't print character");
+                }
+                self.pc + 1
+            }
             Opcode::DEB => {
                 self.debug_state();
                 self.pc + 1
@@ -433,6 +446,7 @@ impl VM {
                     "INP" => Opcode::INP,
                     "PRT" => Opcode::PRT,
                     "PPT" => Opcode::PPT,
+                    "PRC" => Opcode::PRC,
                     "DEB" => Opcode::DEB,
                     "HLT" => Opcode::HLT,
                     "NOP" => Opcode::NOP,
@@ -465,23 +479,6 @@ impl VM {
 
         self.load_program(program);
         Ok(())
-    }
-
-    fn register_index_from_name(&self, reg_name: &str) -> usize {
-        match reg_name {
-            "R0" => 0,
-            "R1" => 1,
-            "R2" => 2,
-            "R3" => 3,
-            "R4" => 4,
-            "R5" => 5,
-            "R6" => 6,
-            "R7" => 7,
-            _ => {
-                eprintln!("Error: Invalid register name {}, defaulting to 0", reg_name);
-                0 // Defaults to 0 if invalid register is given
-            }
-        }
     }
 }
 
