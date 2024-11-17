@@ -38,6 +38,14 @@ pub enum Opcode {
     JGZ, // Jump if greater than zero to label
     JLZ, // Jump if less than zero to label
 
+    // Comparison Operations
+    EQU, // Push 1 if top two values are equal, 0 otherwise
+    NEQ, // Push 1 if top two values are not equal, 0 otherwise
+    GTH, // Push 1 if second-to-top > top, 0 otherwise
+    LTH, // Push 1 if second-to-top < top, 0 otherwise
+    GTE, // Push 1 if second-to-top >= top, 0 otherwise
+    LTE, // Push 1 if second-to-top <= top, 0 otherwise
+
     // IO
     INP, // Gets input from the console and pushes it on to the stack
     PRT, // Print the last thing on the stack to the console
@@ -373,7 +381,96 @@ impl VM {
                 }
                 self.pc + 1
             },
-            
+            Opcode::EQU => {
+                if self.stack.len() < 2 {
+                    eprintln!("Error: Stack Underflow");
+                    return self.pc + 1;
+                }
+                if let (Some(a), Some(b)) = (self.stack.pop(), self.stack.pop()) {
+                    if a == b {
+                        self.stack.push(1);
+                    } else {
+                        self.stack.push(0);
+                    }
+                }
+
+                self.pc + 1
+            }
+            Opcode::NEQ => {
+                if self.stack.len() < 2 {
+                    eprintln!("Error: Stack Underflow");
+                    return self.pc + 1;
+                }
+                if let (Some(a), Some(b)) = (self.stack.pop(), self.stack.pop()) {
+                    if a == b {
+                        self.stack.push(0);
+                    } else {
+                        self.stack.push(1);
+                    }
+                }
+
+                self.pc + 1
+            }
+            Opcode::GTH => {
+                if self.stack.len() < 2 {
+                    eprintln!("Error: Stack Underflow");
+                    return self.pc + 1;
+                }
+                if let (Some(a), Some(b)) = (self.stack.pop(), self.stack.pop()) {
+                    if a < b {
+                        self.stack.push(1);
+                    } else {
+                        self.stack.push(0);
+                    }
+                }
+
+                self.pc + 1
+            }
+            Opcode::LTH => {
+                if self.stack.len() < 2 {
+                    eprintln!("Error: Stack Underflow");
+                    return self.pc + 1;
+                }
+                if let (Some(a), Some(b)) = (self.stack.pop(), self.stack.pop()) {
+                    if a > b {
+                        self.stack.push(1);
+                    } else {
+                        self.stack.push(0);
+                    }
+                }
+
+                self.pc + 1
+            }
+            Opcode::GTE => {
+                if self.stack.len() < 2 {
+                    eprintln!("Error: Stack Underflow");
+                    return self.pc + 1;
+                }
+                if let (Some(a), Some(b)) = (self.stack.pop(), self.stack.pop()) {
+                    if a <= b {
+                        self.stack.push(1);
+                    } else {
+                        self.stack.push(0);
+                    }
+                }
+
+                self.pc + 1
+            }
+            Opcode::LTE => {
+                if self.stack.len() < 2 {
+                    eprintln!("Error: Stack Underflow");
+                    return self.pc + 1;
+                }
+                if let (Some(a), Some(b)) = (self.stack.pop(), self.stack.pop()) {
+                    if a >= b {
+                        self.stack.push(1);
+                    } else {
+                        self.stack.push(0);
+                    }
+                }
+
+                self.pc + 1
+            }
         }
     }
 
@@ -455,6 +552,12 @@ impl VM {
                     "JNZ" => Opcode::JNZ,
                     "JGZ" => Opcode::JGZ,
                     "JLZ" => Opcode::JLZ,
+                    "EQU" => Opcode::EQU,
+                    "NEQ" => Opcode::NEQ,
+                    "GTH" => Opcode::GTH,
+                    "LTH" => Opcode::LTH,
+                    "GTE" => Opcode::GTE,
+                    "LTE" => Opcode::LTE,
                     _ => {
                         eprintln!("Unknown opcode: {}", opcode_str);
                         continue;

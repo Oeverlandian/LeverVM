@@ -1,4 +1,5 @@
 START:
-    PSH 10
+    PSH 0
+    PSH 1
+    GTH
     DEB
-    PRT
