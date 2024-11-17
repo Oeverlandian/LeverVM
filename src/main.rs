@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::io::BufRead;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 const MAX_MEMORY_SIZE: usize = 1024 * 1024; // 1 MB
 const REGISTER_AMOUNT: usize = 8;
@@ -54,6 +55,7 @@ pub enum Opcode {
     PRC, // Prints the ASCII character on the top of the stack
 
     // Miscellaneous 
+    TIM, // Pushes the amount of epoch seconds to the stack
     DEB, // Prints the PC, stack and memory to the console
     HLT, // Halts execution of the program
     NOP, // No operation is executed
@@ -481,6 +483,15 @@ impl VM {
 
                 return self.pc + 1
             }
+            Opcode::TIM => {
+                let now = SystemTime::now();
+                let duration_since_epoch = now.duration_since(UNIX_EPOCH)
+                .expect("Time went backwards");
+            
+                self.stack.push(duration_since_epoch.as_secs() as i32);
+
+                return self.pc + 1
+            }
         }
     }
 
@@ -569,6 +580,7 @@ impl VM {
                     "GTE" => Opcode::GTE,
                     "LTE" => Opcode::LTE,
                     "MCL" => Opcode::MCL,
+                    "TIM" => Opcode::TIM,
                     _ => {
                         eprintln!("Unknown opcode: {}", opcode_str);
                         continue;

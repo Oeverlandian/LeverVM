@@ -66,6 +66,7 @@ Input/Output Operations
 Miscellaneous Operations
 ------------------------
 
+*   ```TIM```: Pushes the current time in Epoch Seconds to the stack
 *   ```DEB```: Prints the current program counter (PC), stack, memory state, registers states and labels to the console.
 *   ```HLT```: Halts the execution of the program.
 *   ```NOP```: Does nothing (no operation).
