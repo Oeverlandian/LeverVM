@@ -44,6 +44,16 @@ Jump Operations
 *   ```JGZ {label}```: Jumps to a label if the top value on the stack is greater than zero.
 *   ```JLZ {label}```: Jumps to a label if the top value on the stack is less than zero.
 
+Comparison Operations
+----------------
+
+*   ```EQU```: Pushes 1 if the two latest values on the stack are equal, otherwise it pushes 0.
+*   ```NEQ```: Pushes 1 if the two latest values on the stack are NOT equal, otherwise it pushes 0.
+*   ```GTH```: Pushes 1 if the second-latest value is greater than the latest value (second-latest > latest), otherwise it pushes 0.
+*   ```LTH```: Pushes 1 if the second-latest value is less than the latest value (second-latest < latest), otherwise it pushes 0.
+*   ```GTE```: Pushes 1 if the second-latest value is greater than or equal to the latest value (second-latest > latest), otherwise it pushes 0.
+*   ```LTE```: Pushes 1 if the second-latest value is less than or equal to the latest value (second-latest < latest), otherwise it pushes 0.
+
 Input/Output Operations
 -----------------------
 
