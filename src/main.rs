@@ -9,13 +9,13 @@ const REGISTER_AMOUNT: usize = 8;
 pub enum Opcode {
     
     // Arithmetic 
-    ADD, // Add's the two latest values on the stack
-    SUB, // Subtracts the two latest values on the stack
-    MUL, // Mulitplies the two latest values on the stack
-    DIV, // Divides the two latest values on the stack
-    MOD, // Finds the remainder of the latest two values on the stack
-    INC, // Increment the latest value on the stack by one
-    DEC, // Decrement the latest value on the stack by one
+    ADD, // Add's the two latest values on the stack, if there are two operands it adds those two provided registers and pushes it onto the stack
+    SUB, // Subtracts the two latest values on the stack, if there are two operands it subtracts the second provided register from the first provided register and pushes it onto the stack
+    MUL, // Mulitplies the two latest values on the stack, if there are two operands it multiplies those two provided registers and pushes it onto the stack
+    DIV, // Divides the two latest values on the stack, if there are two operands it divides the first provided register from the second provided and pushes it onto the stack
+    MOD, // Finds the remainder of the latest two values on the stack, if there are two operands it finds the remainder of the two provided registers and pushes it onto the stack
+    INC, // Increment the latest value on the stack by one, if an operand is provided it increments the register
+    DEC, // Decrement the latest value on the stack by one, if an operand is provided it decrements the register
 
     // Stack Operations
     PSH, // Pushes the given value onto stack
@@ -41,12 +41,12 @@ pub enum Opcode {
     JLZ, // Jump if less than zero to label
 
     // Comparison Operations
-    EQU, // Push 1 if top two values are equal, 0 otherwise
-    NEQ, // Push 1 if top two values are not equal, 0 otherwise
-    GTH, // Push 1 if second-to-top > top, 0 otherwise
-    LTH, // Push 1 if second-to-top < top, 0 otherwise
-    GTE, // Push 1 if second-to-top >= top, 0 otherwise
-    LTE, // Push 1 if second-to-top <= top, 0 otherwise
+    EQU, // Push 1 if top two values are equal, 0 otherwise. If there are two operands it compares the two given registers and returns 1 if equal, 0 otherwise
+    NEQ, // Push 1 if top two values are not equal, 0 otherwise. If there are two operands it compares the two given registers and returns 1 if not equal, 0 otherwise
+    GTH, // Push 1 if second-to-top > top, 0 otherwise. If there are two operands it compares the two given registers and returns 1 if the first provided register is greater than the second provided register, 0 otherwise
+    LTH, // Push 1 if second-to-top < top, 0 otherwise  If there are two operands it compares the two given registers and returns 1 if the first provided register is less than the second provided register, 0 otherwise
+    GTE, // Push 1 if second-to-top >= top, 0 otherwise. If there are two operands it compares the two given registers and returns 1 if the first provided register is greater than or equal than the second provided register, 0 otherwise
+    LTE, // Push 1 if second-to-top <= top, 0 otherwise. If there are two operands it compares the two given registers and returns 1 if the first provided register is less than or equal than the second provided register, 0 otherwise
 
     // IO
     INP, // Gets input from the console and pushes it on to the stack
@@ -65,7 +65,7 @@ pub struct VM {
     stack: Vec<i32>,
     memory: HashMap<usize, i32>,
     registers: [i32; REGISTER_AMOUNT],
-    program: Vec<(Opcode, Option<i32>)>,
+    program: Vec<(Opcode, Option<i32>, Option<i32>)>,
     pc: usize,  // Program counter
     running: bool,
     labels: HashMap<String, usize>,
@@ -84,7 +84,7 @@ impl VM {
         }
     }
 
-    pub fn load_program(&mut self, program: Vec<(Opcode, Option<i32>)>) {
+    pub fn load_program(&mut self, program: Vec<(Opcode, Option<i32>, Option<i32>)>) {
         self.program = program;
         self.pc = 0;
     }
@@ -98,109 +98,162 @@ impl VM {
     }
 
     fn execute_instruction(&mut self) -> usize {
-        let (opcode, operand) = self.program[self.pc];
+        let (opcode, operand_1, operand_2) = self.program[self.pc];
         
         match opcode {
             Opcode::ADD => {
-                if self.stack.len() < 2 {
-                    eprintln!("Error: Stack underflow in ADD operation");
-                    return self.pc + 1;
-                }
-                if let (Some(b), Some(a)) = (self.stack.pop(), self.stack.pop()) {
-                    self.stack.push(a + b);
+                if let Some(operand_2) = operand_2 { // Use register ADD if there is a second operand
+                    if (operand_1.unwrap_or(0) as usize) < REGISTER_AMOUNT && (operand_2 as usize) < REGISTER_AMOUNT {
+                        let result = self.registers[operand_1.unwrap_or(0) as usize] + self.registers[operand_2 as usize];
+                        self.stack.push(result);
+                    } else {
+                        eprintln!("Error: Invalid register index in ADD operation!");
+                    }
+                } else { // Otherwise use stack ADD
+                    if self.stack.len() < 2 {
+                        eprintln!("Error: Stack underflow in ADD operation!");
+                        return self.pc + 1;
+                    }
+                    if let (Some(b), Some(a)) = (self.stack.pop(), self.stack.pop()) {
+                        self.stack.push(a + b);
+                    }
                 }
                 self.pc + 1
             },
             Opcode::SUB => {
-                if self.stack.len() < 2 {
-                    eprintln!("Error: Stack underflow in SUB operation");
-                    return self.pc + 1;
-                }
-                if let (Some(b), Some(a)) = (self.stack.pop(), self.stack.pop()) {
-                    self.stack.push(b - a);
+                if let Some(operand_2) = operand_2 {
+                    if (operand_1.unwrap_or(0) as usize) < REGISTER_AMOUNT && (operand_2 as usize) < REGISTER_AMOUNT {
+                        let result = self.registers[operand_1.unwrap_or(0) as usize] - self.registers[operand_2 as usize];
+                        self.stack.push(result);
+                    } else {
+                        eprintln!("Error: Invalid register index in SUB operation!")
+                    }
+                } else {
+                    if self.stack.len() < 2 {
+                        eprintln!("Error: Stack underflow in SUB operation!");
+                        return self.pc + 1;
+                    }
+                    if let (Some(b), Some(a)) = (self.stack.pop(), self.stack.pop()) {
+                        self.stack.push(b - a);
+                    }
                 }
                 self.pc + 1
             },
             Opcode::MUL => {
-                if self.stack.len() < 2 {
-                    eprintln!("Error: Stack underflow in MUL operation");
-                    return self.pc + 1;
-                }
-                if let (Some(b), Some(a)) = (self.stack.pop(), self.stack.pop()) {
-                    self.stack.push(a * b);
-                }
+                if let Some(operand_2) = operand_2 {
+                    if (operand_1.unwrap_or(0) as usize) < REGISTER_AMOUNT && (operand_2 as usize) < REGISTER_AMOUNT {
+                        let result = self.registers[operand_1.unwrap_or(0) as usize] * self.registers[operand_2 as usize];
+                        self.stack.push(result);
+                    } else {
+                        eprintln!("Error: Invalid register index in MUL operation!")
+                    }
+                } else {
+                    if self.stack.len() < 2 {
+                        eprintln!("Error: Stack underflow in MUL operation!");
+                        return self.pc + 1;
+                    }
+                    if let (Some(b), Some(a)) = (self.stack.pop(), self.stack.pop()) {
+                        self.stack.push(a * b);
+                    }
+                }   
                 self.pc + 1
             },
             Opcode::DIV => {
-                if self.stack.len() < 2 {
-                    eprintln!("Error: Stack underflow in DIV operation");
-                    return self.pc + 1;
-                }
-                if let (Some(b), Some(a)) = (self.stack.pop(), self.stack.pop()) {
-                    if b != 0 {
-                        self.stack.push(b / a);
+                if let Some(operand_2) = operand_2 {
+                    if (operand_1.unwrap_or(0) as usize) < REGISTER_AMOUNT && (operand_2 as usize) < REGISTER_AMOUNT {
+                        let result = self.registers[operand_1.unwrap_or(0) as usize] / self.registers[operand_2 as usize];
+                        self.stack.push(result);
                     } else {
-                        eprintln!("Error: Can't divide by zero!");
+                        eprintln!("Error: Invalid register index in DIV operation!")
+                    }
+                } else {
+                    if self.stack.len() < 2 {
+                        eprintln!("Error: Stack underflow in DIV operation!");
+                        return self.pc + 1;
+                    }
+                    if let (Some(b), Some(a)) = (self.stack.pop(), self.stack.pop()) {
+                        if b != 0 {
+                            self.stack.push(b / a);
+                        } else {
+                            eprintln!("Error: Can't divide by zero in DIV operation!");
+                        }
                     }
                 }
                 self.pc + 1
             },
             Opcode::MOD => {
-                if self.stack.len() < 2 {
-                    eprintln!("Error: Stack underflow in MOD operation");
-                    return self.pc + 1;
-                }
-                if let (Some(b), Some(a)) = (self.stack.pop(), self.stack.pop()) {
-                    if b != 0 {
-                        self.stack.push(b % a);
+                if let Some(operand_2) = operand_2 {
+                    if (operand_1.unwrap_or(0) as usize) < REGISTER_AMOUNT && (operand_2 as usize) < REGISTER_AMOUNT {
+                        let result = self.registers[operand_1.unwrap_or(0) as usize] % self.registers[operand_2 as usize];
+                        self.stack.push(result);
                     } else {
-                        eprintln!("Error: Can't divide by zero!");
+                        eprintln!("Error: Invalid register index in MOD operation!")
+                    }
+                } else {
+                    if self.stack.len() < 2 {
+                        eprintln!("Error: Stack underflow in MOD operation!");
+                        return self.pc + 1;
+                    }
+                    if let (Some(b), Some(a)) = (self.stack.pop(), self.stack.pop()) {
+                        if b != 0 {
+                            self.stack.push(b % a);
+                        } else {
+                            eprintln!("Error: Can't divide by zero in MOD operation!");
+                        }
                     }
                 }
                 self.pc + 1
             }
             Opcode::INC => {
-                if let Some(a) = self.stack.pop() {
-                    self.stack.push(a + 1);
+                if let Some(register) = operand_1 {
+                    self.registers[register as usize] += 1;
                 } else {
-                    eprintln!("Error: Stack underflow in INC operation");
+                    if let Some(a) = self.stack.pop() {
+                        self.stack.push(a + 1);
+                    } else {
+                        eprintln!("Error: Stack underflow in INC operation!");
+                    }
                 }
                 self.pc + 1
             }
             Opcode::DEC => {
-                if let Some(a) = self.stack.pop() {
-                    self.stack.push(a - 1);
+                if let Some(register) = operand_1 {
+                    self.registers[register as usize] -= 1;
                 } else {
-                    eprintln!("Error: Stack underflow in DEC operation");
+                    if let Some(a) = self.stack.pop() {
+                        self.stack.push(a - 1);
+                    } else {
+                        eprintln!("Error: Stack underflow in DEC operation!");
+                    }
                 }
                 self.pc + 1
             }
             Opcode::PSH => {
-                if let Some(value) = operand {
+                if let Some(value) = operand_1 {
                     self.stack.push(value);
                 }
                 self.pc + 1
             },
             Opcode::POP => {
                 if self.stack.is_empty() {
-                    eprintln!("Error: Stack is empty, can't pop");
+                    eprintln!("Error: Stack is empty, can't pop using POP operation!");
                 } else {
                     self.stack.pop();
                 }
                 self.pc + 1
             }
             Opcode::STR => {
-                if let (Some(value), Some(address)) = (self.stack.pop(), operand) {
+                if let (Some(value), Some(address)) = (self.stack.pop(), operand_1) {
                     if address >= 0 && (address as usize) < MAX_MEMORY_SIZE {
                         self.memory.insert(address as usize, value);
                     } else {
-                        eprintln!("Error: Memory address out of bounds");
+                        eprintln!("Error: Memory address out of bounds in STR operation!");
                     }
                 }
                 self.pc + 1
             },
             Opcode::LOA => {
-                if let Some(address) = operand {
+                if let Some(address) = operand_1 {
                     if let Some(&value) = self.memory.get(&(address as usize)) {
                         self.stack.push(value);
                     }
@@ -209,7 +262,7 @@ impl VM {
             },
             Opcode::DUP => {
                 if self.stack.is_empty() {
-                    eprintln!("Error: Stack Underflow");
+                    eprintln!("Error: Stack Underflow in DUP operation!");
                 } else {
                     if let Some(a) = self.stack.pop() {
                         let b = a;
@@ -221,7 +274,7 @@ impl VM {
             },
             Opcode::SWP => {
                 if self.stack.len() < 2 {
-                    eprintln!("Error: Stack Underflow");
+                    eprintln!("Error: Stack Underflow in SWP operation!");
                 } else {
                     if let (Some(a), Some(b)) = (self.stack.pop(), self.stack.pop()) {
                         self.stack.push(b);
@@ -232,7 +285,7 @@ impl VM {
             },
             Opcode::SCL => {
                 if self.stack.is_empty() {
-                    eprintln!("Error: Stack is already empty!");
+                    eprintln!("Error: Stack is already empty, can't perform SCL operation!");
                 } else {
                     self.stack.clear();
                 }
@@ -240,16 +293,16 @@ impl VM {
             },
             Opcode::SET => {
                 if self.stack.is_empty() {
-                    eprintln!("Error: Stack Underflow");
+                    eprintln!("Error: Stack Underflow in SET operation!");
                 } else {
-                    if let Some(reg) = operand {
+                    if let Some(reg) = operand_1 {
                         self.registers[reg as usize] = self.stack.pop().unwrap_or(0);
                     }
                 }
                 self.pc + 1
             },
             Opcode::GET => {
-                if let Some(reg) = operand {
+                if let Some(reg) = operand_1 {
                     let value = self.registers[reg as usize]; 
                     self.stack.push(value);
                 }
@@ -259,11 +312,11 @@ impl VM {
                 let mut input_line = String::new();
                 std::io::stdin()
                     .read_line(&mut input_line)
-                    .expect("Error: Failed to read line");
+                    .expect("Error: Failed to read line in INP operation!");
                 let a: i32 = match input_line.trim().parse() {
                     Ok(val) => val,
                     Err(_) => {
-                        eprintln!("Error: Input is not a valid integer");
+                        eprintln!("Error: Input is not a valid integer in INP operation!");
                         return self.pc + 1;
                     }
                 };
@@ -274,7 +327,7 @@ impl VM {
                 if let Some(value) = self.stack.last() {
                     println!("{}", value);
                 } else {
-                    eprintln!("Error: Stack is empty");
+                    eprintln!("Error: Stack is empty in PRT operation!");
                 }
                 self.pc + 1
             },
@@ -282,7 +335,7 @@ impl VM {
                 if let Some(value) = self.stack.pop() {
                     println!("{}", value);
                 } else {
-                    eprintln!("Error: Stack is empty");
+                    eprintln!("Error: Stack is empty in PPT operation!");
                 }
                 self.pc + 1
             },
@@ -291,10 +344,10 @@ impl VM {
                     if let Some(ch) = char::from_u32(value as u32) {
                         print!("{}", ch);
                     } else {
-                        eprintln!("Error: Invalid ASCII code {}", value);
+                        eprintln!("Error: Invalid ASCII code {} in PRC operation!", value);
                     }
                 } else {
-                    eprintln!("Error: Stack is empty, can't print character");
+                    eprintln!("Error: Stack is empty, can't print character using PRC operation!");
                 }
                 self.pc + 1
             }
@@ -311,11 +364,11 @@ impl VM {
                 self.pc + 1
             },
             Opcode::JMP => {
-                if let Some(target) = operand {
+                if let Some(target) = operand_1 {
                     if (target as usize) < self.program.len() {
                         return target as usize;
                     } else {
-                        eprintln!("Error: Invalid jump target '{}'", target);
+                        eprintln!("Error: Invalid jump target '{}' in JMP operation!", target);
                     }
                 }
                 self.pc + 1
@@ -323,13 +376,13 @@ impl VM {
             Opcode::JEZ => {
                 if let Some(&value) = self.stack.last() {
                     if value == 0 {
-                        if let Some(target) = operand {
+                        if let Some(target) = operand_1 {
                             if let Some(&resolved_target) = self.labels.get(&target.to_string()) {
                                 return resolved_target;
                             } else if (target as usize) < self.program.len() {
                                 return target as usize;
                             } else {
-                                eprintln!("Error: Invalid jump target '{}'", target);
+                                eprintln!("Error: Invalid jump target '{}' in JEZ operation!", target);
                             }
                         }
                     }
@@ -339,13 +392,13 @@ impl VM {
             Opcode::JNZ => {
                 if let Some(&value) = self.stack.last() {
                     if value != 0 {
-                        if let Some(target) = operand {
+                        if let Some(target) = operand_1 {
                             if let Some(&resolved_target) = self.labels.get(&target.to_string()) {
                                 return resolved_target;
                             } else if (target as usize) < self.program.len() {
                                 return target as usize;
                             } else {
-                                eprintln!("Error: Invalid jump target '{}'", target);
+                                eprintln!("Error: Invalid jump target '{}' in JNZ operation!", target);
                             }
                         }
                     }
@@ -355,13 +408,13 @@ impl VM {
             Opcode::JGZ => {
                 if let Some(&value) = self.stack.last() {
                     if value > 0 {
-                        if let Some(target) = operand {
+                        if let Some(target) = operand_1 {
                             if let Some(&resolved_target) = self.labels.get(&target.to_string()) {
                                 return resolved_target;
                             } else if (target as usize) < self.program.len() {
                                 return target as usize;
                             } else {
-                                eprintln!("Error: Invalid jump target '{}'", target);
+                                eprintln!("Error: Invalid jump target '{}' in JGZ operation!", target);
                             }
                         }
                     }
@@ -371,13 +424,13 @@ impl VM {
             Opcode::JLZ => {
                 if let Some(&value) = self.stack.last() {
                     if value < 0 {
-                        if let Some(target) = operand {
+                        if let Some(target) = operand_1 {
                             if let Some(&resolved_target) = self.labels.get(&target.to_string()) {
                                 return resolved_target;
                             } else if (target as usize) < self.program.len() {
                                 return target as usize;
                             } else {
-                                eprintln!("Error: Invalid jump target '{}'", target);
+                                eprintln!("Error: Invalid jump target '{}' in JLZ operation!", target);
                             }
                         }
                     }
@@ -385,98 +438,176 @@ impl VM {
                 self.pc + 1
             },
             Opcode::EQU => {
-                if self.stack.len() < 2 {
-                    eprintln!("Error: Stack Underflow");
-                    return self.pc + 1;
-                }
-                if let (Some(a), Some(b)) = (self.stack.pop(), self.stack.pop()) {
-                    if a == b {
-                        self.stack.push(1);
+                if let Some(operand_2) = operand_2 {
+                    if (operand_1.unwrap_or(0) as usize) < REGISTER_AMOUNT && (operand_2 as usize) < REGISTER_AMOUNT {
+                        let result;
+                        if (operand_1.unwrap_or(0) as usize) == (operand_2 as usize) {
+                            result = 1;
+                        } else {
+                            result = 0;
+                        }
+                        self.stack.push(result);
                     } else {
-                        self.stack.push(0);
+                        eprintln!("Error: Invalid register index in EQU operation!");
+                    }
+                } else {
+                    if self.stack.len() < 2 {
+                        eprintln!("Error: Stack Underflow in EQU operation!");
+                        return self.pc + 1;
+                    }
+                    if let (Some(a), Some(b)) = (self.stack.pop(), self.stack.pop()) {
+                        if a == b {
+                            self.stack.push(1);
+                        } else {
+                            self.stack.push(0);
+                        }
                     }
                 }
-
                 self.pc + 1
             }
             Opcode::NEQ => {
-                if self.stack.len() < 2 {
-                    eprintln!("Error: Stack Underflow");
-                    return self.pc + 1;
-                }
-                if let (Some(a), Some(b)) = (self.stack.pop(), self.stack.pop()) {
-                    if a == b {
-                        self.stack.push(0);
+                if let Some(operand_2) = operand_2 {
+                    if (operand_1.unwrap_or(0) as usize) < REGISTER_AMOUNT && (operand_2 as usize) < REGISTER_AMOUNT {
+                        let result;
+                        if (operand_1.unwrap_or(0) as usize) != (operand_2 as usize) {
+                            result = 1;
+                        } else {
+                            result = 0;
+                        }
+                        self.stack.push(result);
                     } else {
-                        self.stack.push(1);
+                        eprintln!("Error: Invalid register index in NEQ operation!");
+                    }
+                } else {
+                    if self.stack.len() < 2 {
+                        eprintln!("Error: Stack Underflow in NEQ operation!");
+                        return self.pc + 1;
+                    }
+                    if let (Some(a), Some(b)) = (self.stack.pop(), self.stack.pop()) {
+                        if a != b {
+                            self.stack.push(0);
+                        } else {
+                            self.stack.push(1);
+                        }
                     }
                 }
-
                 self.pc + 1
             }
             Opcode::GTH => {
-                if self.stack.len() < 2 {
-                    eprintln!("Error: Stack Underflow");
-                    return self.pc + 1;
-                }
-                if let (Some(a), Some(b)) = (self.stack.pop(), self.stack.pop()) {
-                    if a < b {
-                        self.stack.push(1);
+                if let Some(operand_2) = operand_2 {
+                    if (operand_1.unwrap_or(0) as usize) < REGISTER_AMOUNT && (operand_2 as usize) < REGISTER_AMOUNT {
+                        let result;
+                        if (operand_1.unwrap_or(0) as usize) > (operand_2 as usize) {
+                            result = 1;
+                        } else {
+                            result = 0;
+                        }
+                        self.stack.push(result);
                     } else {
-                        self.stack.push(0);
+                        eprintln!("Error: Invalid register index in GTH operation!");
+                    }
+                } else {
+                    if self.stack.len() < 2 {
+                        eprintln!("Error: Stack Underflow in GTH operation!");
+                        return self.pc + 1;
+                    }
+                    if let (Some(a), Some(b)) = (self.stack.pop(), self.stack.pop()) {
+                        if a < b {
+                            self.stack.push(1);
+                        } else {
+                            self.stack.push(0);
+                        }
                     }
                 }
-
                 self.pc + 1
             }
             Opcode::LTH => {
-                if self.stack.len() < 2 {
-                    eprintln!("Error: Stack Underflow");
-                    return self.pc + 1;
-                }
-                if let (Some(a), Some(b)) = (self.stack.pop(), self.stack.pop()) {
-                    if a > b {
-                        self.stack.push(1);
+                if let Some(operand_2) = operand_2 {
+                    if (operand_1.unwrap_or(0) as usize) < REGISTER_AMOUNT && (operand_2 as usize) < REGISTER_AMOUNT {
+                        let result;
+                        if (operand_1.unwrap_or(0) as usize) < (operand_2 as usize) {
+                            result = 1;
+                        } else {
+                            result = 0;
+                        }
+                        self.stack.push(result);
                     } else {
-                        self.stack.push(0);
+                        eprintln!("Error: Invalid register index in LTH operation!");
+                    }
+                } else {
+                    if self.stack.len() < 2 {
+                        eprintln!("Error: Stack Underflow in LTH operation!");
+                        return self.pc + 1;
+                    }
+                    if let (Some(a), Some(b)) = (self.stack.pop(), self.stack.pop()) {
+                        if a > b {
+                            self.stack.push(1);
+                        } else {
+                            self.stack.push(0);
+                        }
                     }
                 }
-
                 self.pc + 1
             }
             Opcode::GTE => {
-                if self.stack.len() < 2 {
-                    eprintln!("Error: Stack Underflow");
-                    return self.pc + 1;
-                }
-                if let (Some(a), Some(b)) = (self.stack.pop(), self.stack.pop()) {
-                    if a <= b {
-                        self.stack.push(1);
+                if let Some(operand_2) = operand_2 {
+                    if (operand_1.unwrap_or(0) as usize) < REGISTER_AMOUNT && (operand_2 as usize) < REGISTER_AMOUNT {
+                        let result;
+                        if (operand_1.unwrap_or(0) as usize) >= (operand_2 as usize) {
+                            result = 1;
+                        } else {
+                            result = 0;
+                        }
+                        self.stack.push(result);
                     } else {
-                        self.stack.push(0);
+                        eprintln!("Error: Invalid register index in GTE operation!");
+                    }
+                } else {
+                    if self.stack.len() < 2 {
+                        eprintln!("Error: Stack Underflow in GTE operation!");
+                        return self.pc + 1;
+                    }
+                    if let (Some(a), Some(b)) = (self.stack.pop(), self.stack.pop()) {
+                        if a <= b {
+                            self.stack.push(1);
+                        } else {
+                            self.stack.push(0);
+                        }
                     }
                 }
-
                 self.pc + 1
             }
             Opcode::LTE => {
-                if self.stack.len() < 2 {
-                    eprintln!("Error: Stack Underflow");
-                    return self.pc + 1;
-                }
-                if let (Some(a), Some(b)) = (self.stack.pop(), self.stack.pop()) {
-                    if a >= b {
-                        self.stack.push(1);
+                if let Some(operand_2) = operand_2 {
+                    if (operand_1.unwrap_or(0) as usize) < REGISTER_AMOUNT && (operand_2 as usize) < REGISTER_AMOUNT {
+                        let result;
+                        if (operand_1.unwrap_or(0) as usize) <= (operand_2 as usize) {
+                            result = 1;
+                        } else {
+                            result = 0;
+                        }
+                        self.stack.push(result);
                     } else {
-                        self.stack.push(0);
+                        eprintln!("Error: Invalid register index in LTH operation!");
+                    }
+                } else {
+                    if self.stack.len() < 2 {
+                        eprintln!("Error: Stack Underflow");
+                        return self.pc + 1;
+                    }
+                    if let (Some(a), Some(b)) = (self.stack.pop(), self.stack.pop()) {
+                        if a >= b {
+                            self.stack.push(1);
+                        } else {
+                            self.stack.push(0);
+                        }
                     }
                 }
-
                 self.pc + 1
             }
             Opcode::MCL => {
                 if self.memory.is_empty() {
-                    eprintln!("Error: Memory is already clear!")
+                    eprintln!("Error: Memory is already clear, can't perform MCL operation!")
                 } else {
                     self.memory.clear();   
                 }
@@ -486,7 +617,7 @@ impl VM {
             Opcode::TIM => {
                 let now = SystemTime::now();
                 let duration_since_epoch = now.duration_since(UNIX_EPOCH)
-                .expect("Time went backwards");
+                .expect("Time went backwards in TIM operation!");
             
                 self.stack.push(duration_since_epoch.as_secs() as i32);
 
@@ -587,7 +718,7 @@ impl VM {
                     }
                 };
 
-                let operand = if let Some(operand_str) = parts.next() {
+                let operand_1 = if let Some(operand_str) = parts.next() {
                     if self.labels.contains_key(operand_str) {
                         Some(*self.labels.get(operand_str).unwrap() as i32)
                     } else {
@@ -596,9 +727,11 @@ impl VM {
                 } else {
                     None
                 };
+
+                let operand_2 = parts.next().and_then(|s| s.parse::<i32>().ok());
                 
 
-                program.push((opcode, operand));
+                program.push((opcode, operand_1, operand_2));
                 current_position += 1;
             }
         }
