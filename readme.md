@@ -32,7 +32,7 @@
 
 ## Stack Operations
 
-* ```PSH value``` 
+* ```PSH [value]``` 
   - Pushes the given value onto the stack
 
 * ```POP```
