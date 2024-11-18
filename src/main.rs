@@ -30,6 +30,8 @@ pub enum Opcode {
     MCL, // Clears the entire heap
 
     // Register Operations
+    MOV, // Moves a value from one register to another
+    COP, // Copies a value from one register to another
     SET, // Sets the latest value on the stack to the specified register
     GET, // Pushes the value in the register to the stack
 
@@ -203,7 +205,7 @@ impl VM {
                     }
                 }
                 self.pc + 1
-            }
+            },
             Opcode::INC => {
                 if let Some(register) = operand_1 {
                     self.registers[register as usize] += 1;
@@ -215,7 +217,7 @@ impl VM {
                     }
                 }
                 self.pc + 1
-            }
+            },
             Opcode::DEC => {
                 if let Some(register) = operand_1 {
                     self.registers[register as usize] -= 1;
@@ -227,7 +229,7 @@ impl VM {
                     }
                 }
                 self.pc + 1
-            }
+            },
             Opcode::PSH => {
                 if let Some(value) = operand_1 {
                     self.stack.push(value);
@@ -241,7 +243,7 @@ impl VM {
                     self.stack.pop();
                 }
                 self.pc + 1
-            }
+            },
             Opcode::STR => {
                 if let (Some(value), Some(address)) = (self.stack.pop(), operand_1) {
                     if address >= 0 && (address as usize) < MAX_MEMORY_SIZE {
@@ -350,11 +352,11 @@ impl VM {
                     eprintln!("Error: Stack is empty, can't print character using PRC operation!");
                 }
                 self.pc + 1
-            }
+            },
             Opcode::DEB => {
                 self.debug_state();
                 self.pc + 1
-            }
+            },
             Opcode::HLT => {
                 self.running = false;
                 self.pc + 1
@@ -372,7 +374,7 @@ impl VM {
                     }
                 }
                 self.pc + 1
-            }
+            },
             Opcode::JEZ => {
                 if let Some(&value) = self.stack.last() {
                     if value == 0 {
@@ -464,7 +466,7 @@ impl VM {
                     }
                 }
                 self.pc + 1
-            }
+            },
             Opcode::NEQ => {
                 if let Some(operand_2) = operand_2 {
                     if (operand_1.unwrap_or(0) as usize) < REGISTER_AMOUNT && (operand_2 as usize) < REGISTER_AMOUNT {
@@ -492,7 +494,7 @@ impl VM {
                     }
                 }
                 self.pc + 1
-            }
+            },
             Opcode::GTH => {
                 if let Some(operand_2) = operand_2 {
                     if (operand_1.unwrap_or(0) as usize) < REGISTER_AMOUNT && (operand_2 as usize) < REGISTER_AMOUNT {
@@ -520,7 +522,7 @@ impl VM {
                     }
                 }
                 self.pc + 1
-            }
+            },
             Opcode::LTH => {
                 if let Some(operand_2) = operand_2 {
                     if (operand_1.unwrap_or(0) as usize) < REGISTER_AMOUNT && (operand_2 as usize) < REGISTER_AMOUNT {
@@ -548,7 +550,7 @@ impl VM {
                     }
                 }
                 self.pc + 1
-            }
+            },
             Opcode::GTE => {
                 if let Some(operand_2) = operand_2 {
                     if (operand_1.unwrap_or(0) as usize) < REGISTER_AMOUNT && (operand_2 as usize) < REGISTER_AMOUNT {
@@ -576,7 +578,7 @@ impl VM {
                     }
                 }
                 self.pc + 1
-            }
+            },
             Opcode::LTE => {
                 if let Some(operand_2) = operand_2 {
                     if (operand_1.unwrap_or(0) as usize) < REGISTER_AMOUNT && (operand_2 as usize) < REGISTER_AMOUNT {
@@ -604,7 +606,7 @@ impl VM {
                     }
                 }
                 self.pc + 1
-            }
+            },
             Opcode::MCL => {
                 if self.memory.is_empty() {
                     eprintln!("Error: Memory is already clear, can't perform MCL operation!")
@@ -613,7 +615,7 @@ impl VM {
                 }
 
                 return self.pc + 1
-            }
+            },
             Opcode::TIM => {
                 let now = SystemTime::now();
                 let duration_since_epoch = now.duration_since(UNIX_EPOCH)
@@ -622,6 +624,30 @@ impl VM {
                 self.stack.push(duration_since_epoch.as_secs() as i32);
 
                 return self.pc + 1
+            },
+            Opcode::MOV => {
+                if let Some(operand_2) = operand_2 {
+                    let operand_1 = operand_1.unwrap_or(0);
+                    let value= self.registers[operand_1 as usize];
+
+                    self.registers[operand_1 as usize] = 0;
+                    self.registers[operand_2 as usize] = value;
+                } else {
+                    eprintln!("Not enough operands provided in MOV operation!")
+                }
+                return self.pc + 1
+            }
+            Opcode::COP => {
+                if let Some(operand_2) = operand_2 {
+                    let operand_1 = operand_1.unwrap_or(0);
+                    let value= self.registers[operand_1 as usize];
+
+                    self.registers[operand_2 as usize] = value;
+                } else {
+                    eprintln!("Not enough operands provided in MOV operation!")
+                }
+
+               return self.pc + 1
             }
         }
     }
@@ -712,6 +738,8 @@ impl VM {
                     "LTE" => Opcode::LTE,
                     "MCL" => Opcode::MCL,
                     "TIM" => Opcode::TIM,
+                    "MOV" => Opcode::MOV,
+                    "COP" => Opcode::COP,
                     _ => {
                         eprintln!("Unknown opcode: {}", opcode_str);
                         continue;
