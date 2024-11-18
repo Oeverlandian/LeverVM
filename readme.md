@@ -1,72 +1,148 @@
-Opcode Documentation
-====================
+# VM Opcode Documentation
 
-Below is the list of opcodes supported by the virtual machine (VM), along with their descriptions and functionality.
+## Arithmetic Operations
 
-Arithmetic Operations
----------------------
+* ```ADD [register1] [register2]``` 
+  - Without operands: Adds the two latest values on the stack
+  - With 2 registers: Adds values in specified registers, pushes result to stack
 
-*   ```ADD```: Adds the two latest values on the stack.
-*   ```SUB```: Subtracts the two latest values on the stack.
-*   ```MUL```: Multiplies the two latest values on the stack.
-*   ```DIV```: Divides the two latest values on the stack.
-*   ```MOD```: Finds the remainder of the latest two values on the stack.
-*   ```INC```: Increments the latest value on the stack by one.
-*   ```DEC```: Decrements the latest value on the stack by one.
+* ```SUB [register1] [register2]```
+  - Without operands: Subtracts the two latest values on the stack
+  - With 2 registers: Subtracts values in specified registers, pushes result to stack
 
-Stack Operations
----------------
+* ```MUL [register1] [register2]```
+  - Without operands: Multiplies the two latest values on the stack
+  - With 2 registers: Multiplies values in specified registers, pushes result to stack
 
-*   ```PSH```: Pushes the given value onto the stack.
-*   ```POP```: Pops the latest value from the stack.
-*   ```DUP```: Duplicates the top value of the stack and pushes it onto the stack.
-*   ```SWP```: Swaps the two top values on the stack.
-*   ```SCL```: Clears the entire stack.
+* ```DIV [register1] [register2]```
+  - Without operands: Divides the two latest values on the stack
+  - With 2 registers: Divides values in specified registers, pushes result to stack
 
-Memory Operations
----------------
+* ```MOD [register1] [register2]```
+  - Without operands: Finds the remainder of the latest two values on the stack
+  - With 2 registers: Finds remainder of values in specified registers, pushes result to stack
 
-*   ```STR {address}```: Stores the latest value on the stack in memory to the given address.
-*   ```LOA {address}```: Loads the value at a given address from memory onto the stack.
-*   ```MCL```: Clears the entire heap.
+* ```INC [register]```
+  - Without operand: Increments the latest value on the stack by one
+  - With register: Increments the specified register by one
 
-Register Operations
----------------
+* ```DEC [register]```
+  - Without operand: Decrements the latest value on the stack by one
+  - With register: Decrements the specified register by one
 
-*   ```SET {address}```: Stores the latest value on the stack to the given register address (0-7).
-*   ```GET {address}```: Pushes the value in the given register address (0-7) to the stack.
+## Stack Operations
 
-Jump Operations
----------------
+* ```PSH value``` 
+  - Pushes the given value onto the stack
 
-*   ```JMP {label}```: Unconditionally jumps to a specified label.
-*   ```JEZ {label}```: Jumps to a label if the top value on the stack is equal to zero.
-*   ```JNZ {label}```: Jumps to a label if the top value on the stack is not equal to zero.
-*   ```JGZ {label}```: Jumps to a label if the top value on the stack is greater than zero.
-*   ```JLZ {label}```: Jumps to a label if the top value on the stack is less than zero.
+* ```POP```
+  - Removes the latest value from the stack
 
-Comparison Operations
-----------------
+* ```DUP```
+  - Duplicates the top value of the stack and pushes it onto the stack
 
-*   ```EQU```: Pushes 1 if the two latest values on the stack are equal, otherwise it pushes 0.
-*   ```NEQ```: Pushes 1 if the two latest values on the stack are NOT equal, otherwise it pushes 0.
-*   ```GTH```: Pushes 1 if the second-latest value is greater than the latest value (second-latest > latest), otherwise it pushes 0.
-*   ```LTH```: Pushes 1 if the second-latest value is less than the latest value (second-latest < latest), otherwise it pushes 0.
-*   ```GTE```: Pushes 1 if the second-latest value is greater than or equal to the latest value (second-latest > latest), otherwise it pushes 0.
-*   ```LTE```: Pushes 1 if the second-latest value is less than or equal to the latest value (second-latest < latest), otherwise it pushes 0.
+* ```SWP```
+  - Swaps the two top values on the stack
 
-Input/Output Operations
------------------------
+* ```SCL```
+  - Clears the entire stack
 
-*   ```INP```: Gets input from the console and pushes it onto the stack.
-*   ```PRT```: Prints the top value on the stack to the console.
-*   ```PPT```: Prints the top value on the stack and then pops it from the stack.
-*   ```PRC```: Prints a ASCII char based on the value of the top value of the stack.
+## Memory Operations
 
-Miscellaneous Operations
-------------------------
+* ```STR [address]```
+  - Stores the latest value on the stack in memory at the specified address
 
-*   ```TIM```: Pushes the current time in Epoch Seconds to the stack
-*   ```DEB```: Prints the current program counter (PC), stack, memory state, registers states and labels to the console.
-*   ```HLT```: Halts the execution of the program.
-*   ```NOP```: Does nothing (no operation).
+* ```LOA [address]```
+  - Loads the value at the given address from memory onto the stack
+
+* ```MCL```
+  - Clears the entire heap/memory
+
+## Register Operations
+
+* ```MOV [source_register] [destination_register]```
+  - Moves value from source register to destination register, zeroing the source
+
+* ```COP [source_register] [destination_register]```
+  - Copies value from source register to destination register
+
+* ```SET [register]```
+  - Stores the latest value on the stack to the specified register
+
+* ```GET [register]```
+  - Pushes the value in the specified register to the stack
+
+## Jump Operations
+
+* ```JMP [label/address]```
+  - Unconditionally jumps to a specified label or program address
+
+* ```JEZ [label/address]```
+  - Jumps to a label or address if the top stack value is zero
+
+* ```JNZ [label/address]```
+  - Jumps to a label or address if the top stack value is not zero
+
+* ```JGZ [label/address]```
+  - Jumps to a label or address if the top stack value is greater than zero
+
+* ```JLZ [label/address]```
+  - Jumps to a label or address if the top stack value is less than zero
+
+## Comparison Operations
+
+* ```EQU [register1] [register2]```
+  - Without operands: Pushes 1 if stack's top two values are equal, otherwise 0
+  - With registers: Compares register values, pushes 1 if equal, otherwise 0
+
+* ```NEQ [register1] [register2]```
+  - Without operands: Pushes 1 if stack's top two values are NOT equal, otherwise 0
+  - With registers: Compares register values, pushes 1 if not equal, otherwise 0
+
+* ```GTH [register1] [register2]```
+  - Without operands: Pushes 1 if second-to-top value is greater than top value, otherwise 0
+  - With registers: Compares register values, pushes 1 if first register is greater, otherwise 0
+
+* ```LTH [register1] [register2]```
+  - Without operands: Pushes 1 if second-to-top value is less than top value, otherwise 0
+  - With registers: Compares register values, pushes 1 if first register is less, otherwise 0
+
+* ```GTE [register1] [register2]```
+  - Without operands: Pushes 1 if second-to-top value is greater than or equal to top value, otherwise 0
+  - With registers: Compares register values, pushes 1 if first register is greater or equal, otherwise 0
+
+* ```LTE [register1] [register2]```
+  - Without operands: Pushes 1 if second-to-top value is less than or equal to top value, otherwise 0
+  - With registers: Compares register values, pushes 1 if first register is less or equal, otherwise 0
+
+## Input/Output Operations
+
+* ```INP```
+  - Gets input from the console and pushes it onto the stack
+
+* ```PRT```
+  - Prints the top value on the stack to the console
+
+* ```PPT```
+  - Prints the top value on the stack and then pops it from the stack
+
+* ```PRC```
+  - Prints an ASCII character based on the value at the top of the stack
+
+## Miscellaneous Operations
+
+* ```TIM```
+  - Pushes the current time in Epoch Seconds to the stack
+
+* ```DEB```
+  - Prints the current program counter (PC), stack, memory state, registers states, and labels to the console
+
+* ```HLT```
+  - Halts the execution of the program
+
+* ```NOP```
+  - Does nothing (no operation)
+
+## Notes
+- Registers are 0-indexed (0-7)
+- Some operations have dual functionality with or without register operands
